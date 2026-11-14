@@ -191,9 +191,9 @@ def test_consumption_chart_draws():
 
 # -- 3: notifications -----------------------------------------------------------------------------------------
 MESSAGES = {"result": {"messages": [
-    {"msg_id": 5, "type": 6, "did": "blt.1", "title": "Low battery", "content": "vrata senzor", "is_new": 1, "ctime": 2000,
-     "params": {"model": "isa.magnet.dw2hl", "body": {"homeRoomExtra": {"homeName": "Home", "roomName": "hodnik"}}}},
-    {"msg_id": 9, "type": 13, "did": "", "title": "kuhinja Motion detected - Action completed", "content": "", "is_new": 0,
+    {"msg_id": 5, "type": 6, "did": "blt.1", "title": "Low battery", "content": "Door sensor", "is_new": 1, "ctime": 2000,
+     "params": {"model": "isa.magnet.dw2hl", "body": {"homeRoomExtra": {"homeName": "Home", "roomName": "Hall"}}}},
+    {"msg_id": 9, "type": 13, "did": "", "title": "Kitchen Motion detected - Action completed", "content": "", "is_new": 0,
      "ctime": 3000, "params": {}},
     "junk"]}}
 
@@ -214,30 +214,30 @@ def test_cloud_messages_shares_and_scene_details():
             return {"result": {"scene_info_list": [
                 {"scene_id": 31, "name": "Door left open", "type": 0, "enable": True,
                  "scene_trigger": {"triggers": [{"src": "device", "key": "prop.4121", "name": "Timeout, not closed",
-                                                 "extra_json": {"device_name": "vrata senzor", "did": "blt.1",
+                                                 "extra_json": {"device_name": "Door sensor", "did": "blt.1",
                                                                 "model": "isa.magnet.dw2hl"}}]},
                  "scene_action": {"actions": [{"type": 0, "name": "Turn on", "payload_json": {
                      "command": "set_properties", "device_name": "Lamp", "did": "55", "model": "x.light.y"}}]}},
                 {"scene_id": 32, "name": "Evening", "type": 0, "enable": False,
                  "scene_trigger": {"triggers": [{"src": "timer", "key": "timer.crontab", "name": "每天 21:01",
                                                  "value_json": "0 1 21 * * 0,1,2,3,4,5,6 *"}]},
-                 "scene_action": {"actions": [{"type": 2, "name": 'Run "sirena"', "payload_json": {"scene_id": "40"}}]}}]}}
+                 "scene_action": {"actions": [{"type": 2, "name": 'Run "siren"', "payload_json": {"scene_id": "40"}}]}}]}}
         return {"result": {}}
     c.api = api
     msgs = c.messages()
     assert [m["id"] for m in msgs] == ["9", "5"]                                  # newest first, junk skipped
     assert msgs[0]["device"] == "Logs" and msgs[1] == {
-        "id": "5", "type": 6, "did": "blt.1", "title": "Low battery", "device": "vrata senzor", "home": "Home",
-        "room": "hodnik", "model": "isa.magnet.dw2hl", "time": 2000, "new": True}
+        "id": "5", "type": 6, "did": "blt.1", "title": "Low battery", "device": "Door sensor", "home": "Home",
+        "room": "Hall", "model": "isa.magnet.dw2hl", "time": 2000, "new": True}
     c.device_messages("blt.1", 20)
     assert sent[-1] == ("v2/message/v2/list", {"type": 6, "did": "blt.1", "limit": 20})
     assert c.shares() == {"77": [{"userid": "123456", "name": "Ana", "time": 1700000000}]}
     door, evening = c.scenes()
-    assert door["triggers"] == [{"kind": "device", "did": "blt.1", "device": "vrata senzor", "model": "isa.magnet.dw2hl",
+    assert door["triggers"] == [{"kind": "device", "did": "blt.1", "device": "Door sensor", "model": "isa.magnet.dw2hl",
                                  "text": "Timeout, not closed"}]
     assert door["actions"][0]["did"] == "55" and door["actions"][0]["text"] == "Turn on" and door["enabled"]
     assert evening["triggers"][0]["text"] == "Every day 21:01" and not evening["enabled"] and not evening["manual"]
-    assert evening["actions"][0]["text"] == 'Run "sirena"'
+    assert evening["actions"][0]["text"] == 'Run "siren"'
     assert cron_text("0 30 6 * * 1,2,3,4,5 *") == "Mon, Tue, Wed, Thu, Fri 06:30"
     assert cron_text("nonsense") == "At a set time"
 
@@ -294,16 +294,16 @@ def test_notifications_window_and_bell():
     from gui.notifications import NotificationsDialog, when
     c = XiaomiCloud("de", _session())
     c.api = lambda path, data, **kw: MESSAGES
-    main = _Main([{"did": "blt.1", "name": "vrata senzor", "model": "isa.magnet.dw2hl"}], c)
+    main = _Main([{"did": "blt.1", "name": "Door sensor", "model": "isa.magnet.dw2hl"}], c)
     main.app_log = [{"kind": "app", "title": "Lamp is offline", "time": 2500, "did": "", "device": "XiControl", "new": True}]
     dlg = NotificationsDialog(main)
     dlg.show()
     settle()
     texts = [w.text() for w in dlg.findChildren(QLabel)]
-    for wanted in ("Low battery", "vrata senzor", "Home | hodnik", "Lamp is offline", "Logs"):
+    for wanted in ("Low battery", "Door sensor", "Home | Hall", "Lamp is offline", "Logs"):
         assert wanted in texts, (wanted, texts)
-    order = [t for t in texts if t in ("Low battery", "Lamp is offline", "kuhinja Motion detected - Action completed")]
-    assert order == ["kuhinja Motion detected - Action completed", "Lamp is offline", "Low battery"]   # newest first
+    order = [t for t in texts if t in ("Low battery", "Lamp is offline", "Kitchen Motion detected - Action completed")]
+    assert order == ["Kitchen Motion detected - Action completed", "Lamp is offline", "Low battery"]   # newest first
     assert "2 new" in dlg.note.text()
     dlg._open({"did": "gone"})
     assert main.opened == [] and "isn't in XiControl" in dlg.note.text()
@@ -322,13 +322,13 @@ def test_notifications_window_and_bell():
 def test_automations_are_listed_per_device():
     from gui.actions_window import ActionsDialog
     scenes = [
-        {"id": "1", "name": "sirena", "home_id": "11", "home": "Home", "owner": 9, "type": 0, "manual": True, "enabled": True,
+        {"id": "1", "name": "siren", "home_id": "11", "home": "Home", "owner": 9, "type": 0, "manual": True, "enabled": True,
          "triggers": [{"kind": "user", "did": "", "device": "", "model": "", "text": "Tap to run"}],
          "actions": [{"did": "55", "device": "Hub", "model": "", "text": "Play ringtone", "scene_id": ""}]},
         {"id": "2", "name": "Door left open", "home_id": "11", "home": "Home", "owner": 9, "type": 0, "manual": False,
-         "enabled": True, "triggers": [{"kind": "device", "did": "blt.1", "device": "vrata senzor", "model": "",
+         "enabled": True, "triggers": [{"kind": "device", "did": "blt.1", "device": "Door sensor", "model": "",
                                         "text": "Timeout, not closed"}],
-         "actions": [{"did": "", "device": "", "model": "", "text": 'Run "sirena"', "scene_id": "1"}]},
+         "actions": [{"did": "", "device": "", "model": "", "text": 'Run "siren"', "scene_id": "1"}]},
         {"id": "3", "name": "Evening lamp", "home_id": "11", "home": "Home", "owner": 9, "type": 0, "manual": False,
          "enabled": False, "triggers": [{"kind": "timer", "did": "", "device": "", "model": "", "text": "Every day 21:01"}],
          "actions": [{"did": "55", "device": "Hub", "model": "", "text": "Turn on", "scene_id": ""}]}]
@@ -336,7 +336,7 @@ def test_automations_are_listed_per_device():
     class Cloud:
         def scenes(self):
             return scenes
-    devices = [{"did": "blt.1", "name": "vrata senzor (renamed here)", "model": "x"}, {"did": "55", "name": "Hub", "model": "y"}]
+    devices = [{"did": "blt.1", "name": "Door sensor (renamed here)", "model": "x"}, {"did": "55", "name": "Hub", "model": "y"}]
     main = _Main(devices, Cloud())
     dlg = ActionsDialog(main)
     dlg.show()
@@ -344,16 +344,16 @@ def test_automations_are_listed_per_device():
     settle()
     texts = [w.text() for w in dlg.findChildren(QLabel)]
     assert "Manual controls (Xiaomi Home)" in texts and "Automation (Xiaomi Home)  ·  1 on, 1 off" in texts
-    assert 'vrata senzor: Timeout, not closed  ▸  Run "sirena"' in texts and "Every day 21:01  ▸  Hub: Turn on" in texts
+    assert 'Door sensor: Timeout, not closed  ▸  Run "siren"' in texts and "Every day 21:01  ▸  Hub: Turn on" in texts
     from gui.theme import ToggleSwitch
     states = [w.isChecked() for w in dlg.findChildren(ToggleSwitch) if w.isVisibleTo(dlg)]
     assert states == [True, False]                                             # switched-on ones first
-    assert [dlg.filter.itemText(i) for i in range(dlg.filter.count())] == ["Everything", "Only: Hub",
-                                                                           "Only: vrata senzor (renamed here)"]
+    assert [dlg.filter.itemText(i) for i in range(dlg.filter.count())] == [
+        "Everything", "Only: Door sensor (renamed here)", "Only: Hub"]
     dlg.filter.setCurrentIndex(dlg.filter.findData("blt.1"))
     settle()
     texts = [w.text() for w in dlg.findChildren(QLabel) if w.isVisibleTo(dlg)]
-    assert "Door left open" in texts and "Evening lamp" not in texts and "sirena" not in texts
+    assert "Door left open" in texts and "Evening lamp" not in texts and "siren" not in texts
     assert "Automation (Xiaomi Home)  ·  1 on, 0 off" in texts
     dlg.close()
     only = ActionsDialog(main, device_filter="55")
@@ -361,7 +361,7 @@ def test_automations_are_listed_per_device():
     assert pump(lambda: only.scenes is not None)
     settle()
     texts = [w.text() for w in only.findChildren(QLabel) if w.isVisibleTo(only)]
-    assert "Evening lamp" in texts and "sirena" in texts and "Door left open" not in texts
+    assert "Evening lamp" in texts and "siren" in texts and "Door left open" not in texts
     only.close()
 
 

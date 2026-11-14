@@ -591,7 +591,7 @@ class HomePage(QWidget):
         local = sum(1 for st in states if st.online and st.transport == "local")
         cloud = sum(1 for st in states if st.online and st.transport == "cloud")
         if local or cloud:
-            parts.append(f"{local} on the local network, {cloud} through the Mi cloud")
+            parts.append(f"{local} local, {cloud} cloud")
         self.subtitle.setText("  ·  ".join(parts))
         self.subtitle.setToolTip("The sign in front of a device's name: a green house = reached over your local "
                                  "network, a blue cloud = through the Mi cloud.\nRight-click a device → Connection "

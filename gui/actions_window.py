@@ -314,7 +314,7 @@ class ActionsDialog(QDialog):
 
     @staticmethod
     def _flow_text(s) -> str:
-        """'vrata senzor: Timeout, not closed  ▸  Hub: Play ringtone' - what starts it and what it does."""
+        """'Door sensor: Timeout, not closed  ▸  Hub: Play ringtone' - what starts it and what it does."""
         def side(parts):
             texts = [f"{p['device']}: {p['text']}" if p.get("device") else p["text"] for p in parts]
             return " + ".join(texts[:3]) + (f" + {len(texts) - 3} more" if len(texts) > 3 else "")
