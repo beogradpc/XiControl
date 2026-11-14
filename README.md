@@ -3,14 +3,32 @@
 A desktop app that controls Xiaomi / Mi Home devices directly over your home network
 (no phone needed), with Xiaomi's cloud as a fallback for devices that can't be reached locally.
 
+![The home screen: one tile per device, with its state and readings](docs/home.png)
+
+A green house in front of a device's name means it is reached over your local network, a blue cloud that it
+goes through the Mi cloud. A device's page shows everything it can do:
+
+![A device page: power, modes, readings and settings](docs/device.png)
+
+*(Both pictures show simulated devices.)*
+
 ## Start
 
-1. Install **Python 3.10+** from python.org (tick *Add python.exe to PATH*).
-2. Unzip this folder and double-click **`run.bat`**. The first start installs what it needs (1–2 min).
+**The ready-made program (no Python needed)**
+
+1. Download `XiControl.zip` from the [latest release](https://github.com/beogradpc/XiControl/releases/latest).
+2. Unzip it anywhere and start **`XiControl.exe`**. The program isn't code-signed, so Windows SmartScreen may
+   warn the first time: *More info → Run anyway*.
 3. Click **Sign in with Mi account**, scan the QR code with the Mi Home app on your phone,
    pick your devices — done.
 
-Want it without Python? Run **`build_exe.bat`** once; the result is `dist\XiControl\XiControl.exe`
+**From the source**
+
+1. Install **Python 3.10+** from python.org (tick *Add python.exe to PATH*).
+2. Download this repository (*Code → Download ZIP*, or `git clone`) and double-click **`run.bat`**.
+   The first start installs what it needs (1–2 min).
+
+To build the program yourself, run **`build_exe.bat`** once; the result is `dist\XiControl\XiControl.exe`
 (plus `dist\XiControl.zip`, about 49 MB, to copy to another PC). The script leaves out the parts of Qt the app
 never uses and runs `XiControl.exe --selftest` before zipping. `build_exe.bat onefile` makes a single,
 slower-starting exe (not trimmed).
@@ -198,6 +216,12 @@ is used instead. *Settings → Sign out* removes the session.
 `%APPDATA%\XiControl\xicontrol.log` records what went wrong (keys are masked) — *Settings → Open log*.
 Only one XiControl runs at a time; starting it again brings the open window to the front.
 
+- XiControl talks to your devices, to Xiaomi's servers while you are signed in (account, device control,
+  camera video), to miot-spec.org for device descriptions and - only if you say yes - to GitHub for the
+  go2rtc video helper. It has no server of its own and no telemetry.
+- When you report a problem, never post `config.json`, a device token or the answer of `miIO.info` (it
+  contains the token).
+
 ## Project layout
 
 ```
@@ -222,9 +246,25 @@ xc/alerts.py          when a change deserves a notification; xc/autostart.py the
 gui/tray.py           tray icon, quick switches and notifications; gui/icon.py draws the app icon
 xc/catalog.py         categories and legacy-device profiles
 gui/                  PySide6 user interface
-tests/                python -m pytest tests   (fake_device.py / fake_home.py simulate devices;
-                      gui_smoke.py walks through the UI offscreen without touching your settings)
+tests/                simulated devices (fake_device.py, fake_home.py) and the tests that use them
 ```
+
+## Tests
+
+Nothing in `tests/` talks to a real device or account. With the packages of `requirements.txt` installed:
+
+```
+pip install -r requirements-dev.txt
+python -m pytest tests
+```
+
+Every test file also runs on its own (`python tests\test_core.py`). `python tests\gui_smoke.py OUTDIR` walks
+through the whole user interface offscreen with simulated devices, saves screenshots to `OUTDIR` and never
+touches your settings.
+
+## License
+
+[MIT](LICENSE).
 
 Not affiliated with Xiaomi. Cloud login follows the same approach as the open-source
 Xiaomi-cloud-tokens-extractor, Home Assistant's xiaomi_miot integration and go2rtc.

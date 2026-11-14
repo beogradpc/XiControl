@@ -21,3 +21,10 @@ _backup_*/
 
 # Logs
 *.log
+
+# PyInstaller writes this on every build, with paths of the PC it ran on
+*.spec
+
+# Settings, keys and anything read from a real device never belong here
+config.json
+config.json.*

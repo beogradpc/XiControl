@@ -132,8 +132,8 @@ class LoginDialog(QDialog):
             pm = QPixmap()
             pm.loadFromData(data["image"])
             self.qr_pic.setPixmap(pm.scaled(250, 250, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-            url = data.get("login_url")
-            if url:
+            url = data.get("login_url") or ""
+            if url.lower().startswith("https://"):   # only a web page is ever handed to the browser
                 self.open_link.setEnabled(True)
                 try:
                     self.open_link.clicked.disconnect()
